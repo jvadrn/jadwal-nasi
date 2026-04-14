@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Home</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body>
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
@@ -21,19 +22,22 @@
 
 <div class="container mt-4">
 
-  <input type="date" id="tanggal" class="form-control mb-2">
-  <h5 id="tanggalText"></h5>
+  <input type="date" id="tanggal" class="form-control mb-3">
 
-  <h4 class="mt-4">Masak Pagi</h4>
-  <div id="masakPagi"></div>
+  <h4>Yang Masak Pagi</h4>
+  <div id="masakPagi" class="text-success fs-2" ></div>
+  <h4 class="mt-2">Yang sudah ambil nasi pagi</h4>
   <select id="namaPagi" class="form-select mb-2"></select>
-  <button class="btn btn-primary" onclick="aksi('Pagi')">Ambil Nasi</button>
+  <button class="btn btn-primary" onclick="ambil('Pagi')">Ambil Nasi</button>
   <div id="aktivitasPagi" class="mt-2"></div>
 
-  <h4 class="mt-5">Masak Sore</h4>
-  <div id="masakSore"></div>
-  <select id="namaSore" class="form-select mb-2"></select>
-  <button class="btn btn-primary" onclick="aksi('Sore')">Ambil Nasi</button>
+  <hr>
+  <h4>Yang Masak Sore</h4>
+  <div id="masakSore" class="text-success fs-2 mb-3"></div>
+  <h4 class="mt-2">Yang sudah ambil nasi pagi</h4>
+  <select id="namaSore" class="form-select "></select>
+  <button class="btn btn-primary mt-2" onclick="ambil('Sore')">Ambil Nasi</button>
+
   <div id="aktivitasSore" class="mt-2"></div>
 
 </div>
@@ -43,94 +47,108 @@
 
 <script>
 const firebaseConfig = {
-  apiKey: "ISI",
-  authDomain: "ISI",
-  databaseURL: "ISI",
-  projectId: "ISI"
+  apiKey: "AIzaSyABa65ltjb7my-uXu8MqJJwl915-hsalzc",
+  authDomain: "jadwal-nasi.firebaseapp.com",
+  databaseURL: "https://jadwal-nasi-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jadwal-nasi"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let anggota=[], aktivitas=[], masak=[];
+let anggota = [];
+let aktivitas = [];
+let masak = [];
 
-function getHari(t){
-  return ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"][new Date(t).getDay()];
-}
-
-db.ref("anggota").on("value", s=>{
-  anggota=[];
-  s.forEach(c=>anggota.push(c.val().nama));
-  loadSelect();
+/* ===== ANGGOTA ===== */
+db.ref("anggota").on("value", snap => {
+  const data = snap.val();
+  anggota = data ? Object.values(data).map(x => x.nama) : [];
+  renderSelect();
 });
 
-db.ref("aktivitas").on("value", s=>{
-  aktivitas=[];
-  s.forEach(c=>aktivitas.push({...c.val(), key:c.key}));
+/* ===== MASAK ===== */
+db.ref("jadwalMasak").on("value", snap => {
+  const data = snap.val();
+  masak = data ? Object.values(data) : [];
   render();
 });
 
-db.ref("jadwalMasak").on("value", s=>{
-  masak=[];
-  s.forEach(c=>masak.push(c.val()));
+/* ===== AKTIVITAS ===== */
+db.ref("aktivitas").on("value", snap => {
+  const data = snap.val();
+  aktivitas = data ? Object.entries(data).map(([k,v]) => ({...v, key:k})) : [];
   render();
 });
 
-function loadSelect(){
-  let p=document.getElementById("namaPagi");
-  let s=document.getElementById("namaSore");
-  p.innerHTML=''; s.innerHTML='';
-  anggota.forEach(a=>{
-    p.innerHTML+=`<option>${a}</option>`;
-    s.innerHTML+=`<option>${a}</option>`;
+/* ===== SELECT ===== */
+function renderSelect(){
+  const pagi = document.getElementById("namaPagi");
+  const sore = document.getElementById("namaSore");
+
+  pagi.innerHTML = '<option value="">-- pilih --</option>';
+  sore.innerHTML = '<option value="">-- pilih --</option>';
+
+  anggota.forEach(nama => {
+    pagi.innerHTML += `<option value="${nama}">${nama}</option>`;
+    sore.innerHTML += `<option value="${nama}">${nama}</option>`;
   });
 }
 
-function aksi(waktu){
-  let nama = waktu=='Pagi'
-    ? document.getElementById("namaPagi").value
-    : document.getElementById("namaSore").value;
+/* ===== AMBIL NASI ===== */
+function ambil(waktu){
+  const nama = document.getElementById(waktu === "Pagi" ? "namaPagi" : "namaSore").value;
+  const tanggal = document.getElementById("tanggal").value;
 
-  let t=document.getElementById("tanggal").value;
+  if(!nama || !tanggal) return;
 
-  db.ref("aktivitas").push({nama,waktu,tanggal:t});
+  db.ref("aktivitas").push({
+    nama,
+    waktu,
+    tanggal
+  });
 }
 
+/* ===== HAPUS ===== */
 function hapus(key){
-  db.ref("aktivitas/"+key).remove();
+  db.ref("aktivitas/" + key).remove();
 }
 
+/* ===== RENDER ===== */
 function render(){
-  let t=document.getElementById("tanggal").value;
+  const t = document.getElementById("tanggal").value;
   if(!t) return;
 
-  document.getElementById("tanggalText").innerText=t+" - "+getHari(t);
+  const mp = document.getElementById("masakPagi");
+  const ms = document.getElementById("masakSore");
+  const ap = document.getElementById("aktivitasPagi");
+  const as = document.getElementById("aktivitasSore");
 
-  let mp=document.getElementById("masakPagi");
-  let ms=document.getElementById("masakSore");
-  let ap=document.getElementById("aktivitasPagi");
-  let as=document.getElementById("aktivitasSore");
+  mp.innerHTML = "";
+  ms.innerHTML = "";
+  ap.innerHTML = "";
+  as.innerHTML = "";
 
-  mp.innerHTML=''; ms.innerHTML=''; ap.innerHTML=''; as.innerHTML='';
-
-  masak.filter(m=>m.tanggal==t).forEach(m=>{
-    let el=`<div class="border p-1 mb-1">${m.nama}</div>`;
-    m.waktu=='Pagi'?mp.innerHTML+=el:ms.innerHTML+=el;
+  masak.filter(m => m.tanggal === t).forEach(m => {
+    const el = `<div>${m.nama}</div>`;
+    m.waktu === "Pagi" ? mp.innerHTML += el : ms.innerHTML += el;
   });
 
-  aktivitas.filter(a=>a.tanggal==t).forEach(a=>{
-    let el=`
-    <div class="d-flex justify-content-between border p-1 mb-1">
-      ${a.nama}
-      <button onclick="hapus('${a.key}')" class="btn btn-danger btn-sm">X</button>
-    </div>`;
-    a.waktu=='Pagi'?ap.innerHTML+=el:as.innerHTML+=el;
+  aktivitas.filter(a => a.tanggal === t).forEach(a => {
+    const el = `
+      <div class="d-flex justify-content-between">
+        ${a.nama}
+        <button class="btn btn-danger btn-sm" onclick="hapus('${a.key}')">X</button>
+      </div>
+    `;
+    a.waktu === "Pagi" ? ap.innerHTML += el : as.innerHTML += el;
   });
 }
 
-let today=new Date().toISOString().split('T')[0];
-document.getElementById("tanggal").value=today;
-document.getElementById("tanggal").addEventListener("change",render);
+/* ===== INIT ===== */
+document.getElementById("tanggal").value = new Date().toISOString().split("T")[0];
+document.getElementById("tanggal").addEventListener("change", render);
 </script>
+
 </body>
 </html>

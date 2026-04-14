@@ -7,19 +7,53 @@
 </head>
 <body>
 
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container">
+    <a class="navbar-brand">Jadwal Nasi</a>
+    <div>
+      <a class="btn btn-outline-primary me-2" href="index.html">Home</a>
+      <a class="btn btn-outline-primary me-2" href="Anggota.html">Anggota</a>
+      <a class="btn btn-primary" href="Masak.html">Masak</a>
+    </div>
+  </div>
+</nav>
+
 <div class="container mt-4">
-<h3>Set Jadwal Masak</h3>
 
-<input type="date" id="tanggal" class="form-control mb-2">
+  <h3>Set Jadwal Masak</h3>
 
-<select id="nama" class="form-select mb-2"></select>
+  <!-- TANGGAL -->
+  <div class="card p-3 mb-3">
+    <label>Pilih Tanggal</label>
+    <input type="date" id="tanggal" class="form-control mb-2">
+    <p id="hariText" class="fw-bold"></p>
+  </div>
 
-<select id="waktu" class="form-select mb-2">
-  <option>Pagi</option>
-  <option>Sore</option>
-</select>
+  <!-- PILIH ANGGOTA -->
+  <div class="card p-3 mb-3">
+    <label>Pilih Anggota</label>
+    <select id="nama" class="form-select mb-2"></select>
 
-<button onclick="setMasak()" class="btn btn-primary">Simpan</button>
+    <label>Waktu</label>
+    <select id="waktu" class="form-select mb-2">
+      <option value="Pagi">Pagi</option>
+      <option value="Sore">Sore</option>
+    </select>
+
+    <button class="btn btn-success" onclick="setMasak()">Set Jadwal</button>
+  </div>
+
+  <!-- HASIL -->
+  <div class="row">
+    <div class="col">
+      <h5>Masak Pagi</h5>
+      <ul id="pagi" class="list-group"></ul>
+    </div>
+    <div class="col">
+      <h5>Masak Sore</h5>
+      <ul id="sore" class="list-group"></ul>
+    </div>
+  </div>
 
 </div>
 
@@ -27,18 +61,24 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script>
-const firebaseConfig = { apiKey:"ISI", authDomain:"ISI", databaseURL:"ISI", projectId:"ISI" };
+const firebaseConfig = {
+  apiKey: "AIzaSyABa65ltjb7my-uXu8MqJJwl915-hsalzc",
+  authDomain: "jadwal-nasi.firebaseapp.com",
+  databaseURL: "https://jadwal-nasi-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jadwal-nasi"
+};
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-function setMasak(){
-  let nama=document.getElementById("nama").value;
-  let tanggal=document.getElementById("tanggal").value;
-  let waktu=document.getElementById("waktu").value;
+let dataMasak=[];
 
-  db.ref("jadwalMasak").push({nama,tanggal,waktu});
+// hari
+function getHari(t){
+  return ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"][new Date(t).getDay()];
 }
 
+// load anggota
 db.ref("anggota").on("value", s=>{
   let sel=document.getElementById("nama");
   sel.innerHTML='';
@@ -46,6 +86,56 @@ db.ref("anggota").on("value", s=>{
     sel.innerHTML+=`<option>${c.val().nama}</option>`;
   });
 });
+
+// set jadwal
+function setMasak(){
+  let nama=document.getElementById("nama").value;
+  let tanggal=document.getElementById("tanggal").value;
+  let waktu=document.getElementById("waktu").value;
+
+  if(!tanggal) return;
+
+  db.ref("jadwalMasak").push({nama,tanggal,waktu});
+}
+
+// realtime tampil
+db.ref("jadwalMasak").on("value", s=>{
+  dataMasak=[];
+  s.forEach(c=>{
+    dataMasak.push({...c.val(), key:c.key});
+  });
+  render();
+});
+
+function hapus(key){
+  db.ref("jadwalMasak/"+key).remove();
+}
+
+function render(){
+  let t=document.getElementById("tanggal").value;
+  if(!t) return;
+
+  document.getElementById("hariText").innerText=getHari(t);
+
+  let pagi=document.getElementById("pagi");
+  let sore=document.getElementById("sore");
+
+  pagi.innerHTML='';
+  sore.innerHTML='';
+
+  dataMasak.filter(m=>m.tanggal==t).forEach(m=>{
+    let el=`
+    <li class="list-group-item d-flex justify-content-between">
+      ${m.nama}
+      <button onclick="hapus('${m.key}')" class="btn btn-danger btn-sm">X</button>
+    </li>`;
+
+    m.waktu=='Pagi'?pagi.innerHTML+=el:sore.innerHTML+=el;
+  });
+}
+
+document.getElementById("tanggal").addEventListener("change",render);
 </script>
+
 </body>
 </html>
