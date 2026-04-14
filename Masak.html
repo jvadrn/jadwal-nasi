@@ -1,141 +1,51 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Masak</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="utf-8">
+<title>Masak</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg bg-body-tertiary">
-  <div class="container">
-    <a class="navbar-brand">Jadwal Nasi</a>
-    <div>
-      <a class="btn btn-outline-primary me-2" href="index.html">Home</a>
-      <a class="btn btn-outline-primary me-2" href="Anggota.html">Anggota</a>
-      <a class="btn btn-primary" href="Masak.html">Masak</a>
-    </div>
-  </div>
-</nav>
-
 <div class="container mt-4">
+<h3>Set Jadwal Masak</h3>
 
-  <h3>Set Jadwal Masak</h3>
+<input type="date" id="tanggal" class="form-control mb-2">
 
-  <!-- TANGGAL -->
-  <div class="card p-3 mb-3">
-    <label>Pilih Tanggal</label>
-    <input type="date" id="tanggal" class="form-control mb-2">
-    <p id="hariText" class="fw-bold"></p>
-  </div>
+<select id="nama" class="form-select mb-2"></select>
 
-  <!-- PILIH ANGGOTA -->
-  <div class="card p-3 mb-3">
-    <label>Pilih Anggota</label>
-    <select id="nama" class="form-select mb-2"></select>
+<select id="waktu" class="form-select mb-2">
+  <option>Pagi</option>
+  <option>Sore</option>
+</select>
 
-    <label>Waktu</label>
-    <select id="waktu" class="form-select mb-2">
-      <option value="Pagi">Pagi</option>
-      <option value="Sore">Sore</option>
-    </select>
-
-    <button class="btn btn-success" onclick="setMasak()">Set Jadwal</button>
-  </div>
-
-  <!-- HASIL -->
-  <div class="row">
-    <div class="col">
-      <h5>Masak Pagi</h5>
-      <ul id="pagi" class="list-group"></ul>
-    </div>
-    <div class="col">
-      <h5>Masak Sore</h5>
-      <ul id="sore" class="list-group"></ul>
-    </div>
-  </div>
+<button onclick="setMasak()" class="btn btn-primary">Simpan</button>
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <script>
-let anggota = JSON.parse(localStorage.getItem('anggota')) || [];
-let jadwal = JSON.parse(localStorage.getItem('jadwalMasak')) || [];
+const firebaseConfig = { apiKey:"ISI", authDomain:"ISI", databaseURL:"ISI", projectId:"ISI" };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-function getHari(tanggal) {
-  const hari = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
-  return hari[new Date(tanggal).getDay()];
+function setMasak(){
+  let nama=document.getElementById("nama").value;
+  let tanggal=document.getElementById("tanggal").value;
+  let waktu=document.getElementById("waktu").value;
+
+  db.ref("jadwalMasak").push({nama,tanggal,waktu});
 }
 
-function loadAnggota() {
-  let select = document.getElementById('nama');
-  select.innerHTML = '';
-
-  anggota.forEach(a => {
-    select.innerHTML += `<option value="${a}">${a}</option>`;
+db.ref("anggota").on("value", s=>{
+  let sel=document.getElementById("nama");
+  sel.innerHTML='';
+  s.forEach(c=>{
+    sel.innerHTML+=`<option>${c.val().nama}</option>`;
   });
-}
-
-function setMasak() {
-  let nama = document.getElementById('nama').value;
-  let waktu = document.getElementById('waktu').value;
-  let tanggal = document.getElementById('tanggal').value;
-
-  if (!tanggal) return;
-
-  let data = { nama, waktu, tanggal };
-  jadwal.push(data);
-
-  localStorage.setItem('jadwalMasak', JSON.stringify(jadwal));
-  render();
-}
-
-function render() {
-  let pagi = document.getElementById('pagi');
-  let sore = document.getElementById('sore');
-  let tanggal = document.getElementById('tanggal').value;
-
-  pagi.innerHTML = '';
-  sore.innerHTML = '';
-
-  if (!tanggal) return;
-
-  document.getElementById('hariText').innerText = getHari(tanggal);
-
-  jadwal
-    .filter(j => j.tanggal === tanggal)
-    .forEach(j => {
-      let li = `
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          ${j.nama}
-          <button class="btn btn-danger btn-sm" onclick="hapus('${j.nama}','${j.waktu}','${j.tanggal}')">Hapus</button>
-        </li>
-      `;
-
-      if (j.waktu === 'Pagi') pagi.innerHTML += li;
-      else sore.innerHTML += li;
-    });
-}
-
-function hapus(nama, waktu, tanggal) {
-  jadwal = jadwal.filter(j => !(j.nama===nama && j.waktu===waktu && j.tanggal===tanggal));
-  localStorage.setItem('jadwalMasak', JSON.stringify(jadwal));
-  render();
-}
-
-// default tanggal hari ini
-let today = new Date().toISOString().split('T')[0];
-document.getElementById('tanggal').value = today;
-
-// trigger render saat ganti tanggal
-document.getElementById('tanggal').addEventListener('change', render);
-
-loadAnggota();
-render();
+});
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
