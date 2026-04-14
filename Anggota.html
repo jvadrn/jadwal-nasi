@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anggota</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container">
+    <a class="navbar-brand">Jadwal Nasi</a>
+    <div>
+      <a class="btn btn-outline-primary me-2" href="index.html">Home</a>
+      <a class="btn btn-primary me-2" href="Anggota.html">Anggota</a>
+      <a class="btn btn-outline-primary" href="Masak.html">Masak</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+
+  <h3>CRUD Anggota</h3>
+
+  <!-- FORM -->
+  <div class="card p-3 mb-3">
+    <input type="hidden" id="editIndex">
+    
+    <div class="mb-2">
+      <input type="text" id="nama" class="form-control" placeholder="Nama anggota">
+    </div>
+
+    <button class="btn btn-success" onclick="save()">Simpan</button>
+  </div>
+
+  <!-- TABLE -->
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Nama</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+
+</div>
+
+<script>
+let anggota = JSON.parse(localStorage.getItem('anggota')) || [];
+
+function render() {
+  let list = document.getElementById('list');
+  list.innerHTML = '';
+
+  anggota.forEach((a, i) => {
+    list.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${a}</td>
+        <td>
+          <button class="btn btn-warning btn-sm" onclick="edit(${i})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="hapus(${i})">Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function save() {
+  let nama = document.getElementById('nama').value;
+  let index = document.getElementById('editIndex').value;
+
+  if (!nama) return;
+
+  if (index === '') {
+    anggota.push(nama);
+  } else {
+    anggota[index] = nama;
+  }
+
+  localStorage.setItem('anggota', JSON.stringify(anggota));
+  document.getElementById('nama').value = '';
+  document.getElementById('editIndex').value = '';
+
+  render();
+}
+
+function edit(i) {
+  document.getElementById('nama').value = anggota[i];
+  document.getElementById('editIndex').value = i;
+}
+
+function hapus(i) {
+  anggota.splice(i, 1);
+  localStorage.setItem('anggota', JSON.stringify(anggota));
+  render();
+}
+
+render();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
